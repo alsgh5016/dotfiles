@@ -3,7 +3,7 @@
 # version = "0.95.0"
 
 def create_left_prompt [] {
-    let dir = match (do --ignore-shell-errors { $env.PWD | path relative-to $nu.home-path }) {
+    let dir = match (do { $env.PWD | path relative-to $nu.home-path }) {
         null => $env.PWD
         '' => '~'
         $relative_pwd => ([~ $relative_pwd] | path join)
@@ -100,22 +100,34 @@ use std "path add"
 if 'IN_NIX_SHELL' not-in $env and 'DEVBOX_SHELL_ENABLED' not-in $env {
     $env.PATH = ($env.PATH | append [
         /opt/homebrew/bin
+        /opt/homebrew/opt/llvm/bin
+	      /usr/local/bin
         /run/current-system/sw/bin
-        /Users/omerxx/.local/bin
+        /Users/minho.kim/.local/bin
         /opt/homebrew/opt/ruby/bin
         /opt/homebrew/sbin
-        /Users/omerxx/.opencode/bin
+        /Users/minho.kim/.opencode/bin
     ])
 }
 
-devbox global shellenv --format nushell --preserve-path-stack -r
-  | lines 
-  | parse "$env.{name} = \"{value}\""
-  | where name != null 
-  | transpose -r 
-  | into record 
-  | load-env
+# devbox global shellenv --format nushell --preserve-path-stack -r
+let devbox_bin = "/opt/homebrew/bin/devbox"
 
+if ($devbox_bin | path exists) {
+    try {
+        let raw_env = (^$devbox_bin global shellenv -r | lines)
+        
+        # 'filter' 대신 'where'를 사용합니다.
+        let env_record = ($raw_env 
+            | where ($it | str starts-with "export ") 
+            | parse "export {name}=\"{value}\""
+            | transpose -r -d)
+        
+        load-env $env_record
+    } catch {
+        print "Devbox environment could not be loaded via custom parser."
+    }
+}
 
 # To load from a custom file you can use:
 # source ($nu.default-config-dir | path join 'custom.nu')
@@ -124,10 +136,17 @@ mkdir ~/.cache/starship
 starship init nu | save -f ~/.cache/starship/init.nu
 zoxide init nushell | save -f ~/.zoxide.nu
 
-$env.STARSHIP_CONFIG = /Users/omerxx/.config/starship/starship.toml
-$env.NIX_CONF_DIR = /Users/omerxx/.config/nix
+$env.STARSHIP_CONFIG = "/Users/minho.kim/.config/starship/starship.toml"
+$env.NIX_CONF_DIR = "/Users/minho.kim/.config/nix"
 $env.CARAPACE_BRIDGES = 'zsh,fish,bash,inshellisense' # optional
 mkdir ~/.cache/carapace
 carapace _carapace nushell | save --force ~/.cache/carapace/init.nu
 
 $env.EDITOR = "nvim"
+
+# 컴파일러 설정을 위한 LDFLAGS 추가
+$env.LDFLAGS = "-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
+
+# 필요 시 CPPFLAGS 등도 추가 가능
+$env.CPPFLAGS = "-I/opt/homebrew/opt/llvm/include"
+
