@@ -972,7 +972,7 @@ source ~/.local/share/atuin/init.nu
 use ~/.cache/starship/init.nu
 
 let ruby_ver = "3.4.0"
-let gem_home = ($nu.home-dir | path join ".gem" "ruby" $ruby_ver)
+let gem_home = ($env.HOME | path join ".gem" "ruby" $ruby_ver)
 let gem_bin = ($gem_home | path join "bin")
 
 # Set GEM paths
@@ -987,17 +987,30 @@ $env.DIRENV_LOG_FORMAT = ""
 
 
 # ── 원격 서버에 ghostty terminfo(xterm-ghostty) 설치 ─────────────────────────
-# ghostty의 shell-integration ssh 래퍼가 안 붙는 상황용 수동 도구. 서버당 1회.
-# 인자는 실제 ssh와 동일하게 그대로 넘어간다 (원격 명령은 항상 맨 뒤에 붙음):
+# ghostty의 shell-integration ssh 래퍼가 안 붙는 상황용 수동 도구. 원격 계정당 1회.
+# 인자는 실제 ssh와 동일하게 그대로 넘어간다:
 #   ssh-terminfo root@myhost
 #   ssh-terminfo -p 2222 user@myhost
-#   ssh-terminfo -i ~/.ssh/id_rsa -o ConnectTimeout=5 user@myhost
-# terminfo 데이터를 인자로 실어 보내므로 stdin이 터미널에 남아 비번 1회면 된다.
-# root로 접속하면 /etc/terminfo 에 들어가 그 서버의 모든 계정에 적용된다.
+# 설계 (2026-09-24 3차):
+# - 원격 명령은 셸 문법이 전혀 없는 단일 명령(`tic -x /dev/stdin`)만 보낸다.
+#   ssh 원격 명령은 원격 계정의 로그인 셸이 해석하는데, 리다이렉트(2>/dev/null)나
+#   &&, 따옴표를 쓰면 셸(nu/zsh/bash/csh)마다 해석이 달라 tic 이 엉뚱한 인자를 받는다
+#   ("tic: Too many file names" 가 그 증상). 단순 명령은 어느 셸에서나 같다.
+# - terminfo 는 stdin 으로 보낸다. 파이프는 bash 가 담당한다
+#   (nushell 파이프 → ssh 로는 원격 tic 이 EOF 를 못 받고 멈춘 적이 있음).
+# - tic 인자는 `-` 대신 `/dev/stdin` — 구버전 macOS tic 에서도 확실하게 동작.
+# - ControlMaster 로 연결을 재사용해 확인 단계에서 비번을 다시 묻지 않는다.
+# - root 면 /etc/terminfo(서버 전체), 일반 계정이면 ~/.terminfo(그 계정만)에 들어간다.
 def --wrapped ssh-terminfo [...args] {
-    let ti = (infocmp -x xterm-ghostty | encode base64)
-    let remote = $"echo '($ti)' | base64 -d | tic -x - 2>&1 | grep -v 'older tic versions' ; infocmp xterm-ghostty >/dev/null 2>&1 && echo 'terminfo OK' || echo 'terminfo FAILED (tic 설치 확인: apt install ncurses-bin)'"
-    ^ssh ...$args $remote
+    let cm = [-o ControlMaster=auto -o "ControlPath=/tmp/ssh-terminfo-%C" -o ControlPersist=15]
+    # 실패해도 아래 확인 단계까지 가서 원인을 보여주도록 try 로 감싼다
+    try { ^bash -c 'infocmp -x xterm-ghostty | ssh "$@" tic -x /dev/stdin' ssh-terminfo ...$cm ...$args }
+    let r = (^ssh ...$cm ...$args infocmp xterm-ghostty | complete)
+    if $r.exit_code == 0 {
+        print "terminfo OK — 다시 접속하면 백스페이스가 정상입니다"
+    } else {
+        print $"terminfo FAILED: ($r.stderr | str trim)"
+    }
 }
 
 # cps (claude-profile-switch) — 같은 디렉터리의 cps.nu 를 로드한다.

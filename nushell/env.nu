@@ -3,7 +3,7 @@
 # version = "0.95.0"
 
 def create_left_prompt [] {
-    let dir = match (do { $env.PWD | path relative-to $nu.home-path }) {
+    let dir = match (do { $env.PWD | path relative-to $env.HOME }) {
         null => $env.PWD
         '' => '~'
         $relative_pwd => ([~ $relative_pwd] | path join)
@@ -98,10 +98,11 @@ use std "path add"
 # $env.PATH = ($env.PATH | uniq)
 
 # ── 기기 의존 경로 (사용자명·아키텍처 무관) ───────────────────────────────────
-# $nu.home-path : 사용자명과 무관하게 홈을 가리킨다.
-#   ⚠ 0.107 기준 이름은 home-path 다. 예전 사본의 `$nu.home-dir` 은 존재하지 않아 런타임 에러가 난다.
+# $env.HOME : 사용자명과 무관하게 홈을 가리킨다.
+#   ⚠ `$nu.home-path` / `$nu.home-dir` 는 nushell 버전마다 이름이 달라(0.107 은 home-path, 이후 home-dir)
+#     기기 간 버전이 어긋나면 셸 시작 시 에러가 난다. 모든 버전에서 같은 $env.HOME 을 쓴다.
 # $brew : Apple Silicon(/opt/homebrew) / Intel(/usr/local) 자동 판별
-let home = $nu.home-path
+let home = $env.HOME
 let brew = (if ("/opt/homebrew/bin/brew" | path exists) { "/opt/homebrew" } else { "/usr/local" })
 
 if 'IN_NIX_SHELL' not-in $env and 'DEVBOX_SHELL_ENABLED' not-in $env {

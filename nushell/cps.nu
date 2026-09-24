@@ -8,7 +8,7 @@ $env.CPS_SHELL_INIT_SOURCED = "1"
 
 # 1) 데이터 디렉터리 (원본 lib/utils.sh 와 동일 규칙)
 $env.CPS_DATA_DIR = ($env.CPS_DATA_DIR? | default (
-    ($env.XDG_DATA_HOME? | default ($nu.home-path | path join ".local" "share"))
+    ($env.XDG_DATA_HOME? | default ($env.HOME | path join ".local" "share"))
     | path join "cps"
 ))
 

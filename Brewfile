@@ -25,7 +25,8 @@ brew "bat"
 brew "jq"
 
 # ── 에디터 · 멀티플렉서 ───────────────────────────────────────────────────────
-brew "neovim"       # alias v / vim
+brew "neovim"       # alias v / vim  (LazyVim 최신 + nvim-treesitter main 은 0.12 이상 필요)
+brew "tree-sitter-cli"  # nvim-treesitter main 브랜치가 파서 컴파일에 사용 (0.26.1+). Intel 맥은 소스 빌드라 오래 걸림
 brew "tmux"
 
 # ── git ───────────────────────────────────────────────────────────────────────

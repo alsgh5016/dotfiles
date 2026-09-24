@@ -49,6 +49,19 @@ if [ "$DO_BREW" -eq 1 ]; then
     eval "$("$BREW_PREFIX/bin/brew" shellenv)"
   fi
 
+  # macOS 기본 셸(zsh)에서도 brew 도구가 PATH 에 잡히게 한다.
+  # 이 레포는 zshrc 를 관리하지 않으므로, 새 맥에서 이게 없으면 zsh 로 ssh 접속했을 때
+  # nu / nvim / tmux 등을 못 찾는다. ~/.zprofile 은 기기별 파일이라 경로를 그대로 적어도 된다.
+  ZPROFILE="$HOME/.zprofile"
+  if ! grep -qsF "brew shellenv" "$ZPROFILE"; then
+    info "$ZPROFILE 에 brew shellenv 추가"
+    if [ "$DRY_RUN" -eq 1 ]; then
+      printf '    (dry-run) %s 에 추가: eval "$(%s/bin/brew shellenv)"\n' "$ZPROFILE" "$BREW_PREFIX"
+    else
+      printf '\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "$ZPROFILE"
+    fi
+  fi
+
   info "Brewfile 설치 (CLI 도구)"
   run brew bundle --file="$DOTFILES/Brewfile"
   ok "brew 단계 완료"
@@ -174,7 +187,10 @@ cat <<'EOS'
   4. cps 프로필은 기기마다 로그인이 필요합니다:  cps use <name> → claude → /login
   5. GUI 앱(Ghostty / AeroSpace / Karabiner / Hammerspoon 등)은 Brewfile 하단
      주석을 풀거나 직접 설치하세요.
-  6. 예전에 stow 가 만들어 둔 잔여 심링크가 있으면 정리:
+  6. git 커밋 정보(기기마다 따로):
+       git config --global user.name  "..."
+       git config --global user.email "..."
+  7. 예전에 stow 가 만들어 둔 잔여 심링크가 있으면 정리:
        rm -f ~/.config/README.md ~/.config/setup.sh ~/.config/Brewfile
 
 문제가 생기면 백업 디렉터리에서 되돌릴 수 있습니다: ~/.config-backup-*
