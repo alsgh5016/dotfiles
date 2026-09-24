@@ -149,6 +149,8 @@ $env.NIX_CONF_DIR = ($home | path join ".config" "nix")
 $env.CARAPACE_BRIDGES = 'zsh,fish,bash,inshellisense' # optional
 mkdir ~/.cache/carapace
 carapace _carapace nushell | save --force ~/.cache/carapace/init.nu
+mkdir ~/.local/share/atuin
+atuin init nu | save --force ~/.local/share/atuin/init.nu
 
 $env.EDITOR = "nvim"
 
