@@ -20,7 +20,9 @@ hs.alert.show("Config loaded")
 
 local calendar = hs.loadSpoon("GoMaCal")
 if calendar then
-    calendar:setCalendarPath('/Users/omerxx/dotfiles/hammerspoon/calendar-app/calapp')
+    -- 원본 저자의 절대경로였음. hs.configdir 기준으로 변경.
+    -- ⚠ calendar-app/calapp 바이너리는 이 레포에 없어 실제로는 동작하지 않는다.
+    calendar:setCalendarPath(hs.configdir .. '/calendar-app/calapp')
     calendar:start()
 end
 

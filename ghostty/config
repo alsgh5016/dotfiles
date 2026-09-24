@@ -3,3 +3,7 @@ background-blur-radius = 20
 mouse-hide-while-typing = true
 window-decoration = false
 macos-option-as-alt = true
+
+# ssh 시 원격에 xterm-ghostty terminfo 자동 설치 + 터미널 식별 변수 전달
+# (2026-09-18) 서버 .bashrc의 `export TERM=xterm-256color` 대체용. ghostty 1.3+ 필요.
+shell-integration-features = ssh-env,ssh-terminfo

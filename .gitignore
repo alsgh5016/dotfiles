@@ -3,3 +3,8 @@ tmux/plugins/
 raycast
 fzf
 history.txt
+
+# nushell 런타임 파일 (심링크 대상 디렉터리에 생기는 것들)
+nushell/history.txt
+nushell/plugin.msgpackz
+nushell/vendor/

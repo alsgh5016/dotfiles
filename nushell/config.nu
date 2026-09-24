@@ -386,7 +386,7 @@ $env.config = {
 
     keybindings: [
         {
-            name: delete_one_word_backward
+            name: delete_one_word_backward_alt_backspace
             modifier: alt
             keycode: backspace
             mode: [emacs, vi_normal, vi_insert]
@@ -501,7 +501,7 @@ $env.config = {
             event: { send: openeditor }
         }
         {
-            name: move_up
+            name: move_up_none_up
             modifier: none
             keycode: up
             mode: [emacs, vi_normal, vi_insert]
@@ -513,7 +513,7 @@ $env.config = {
             }
         }
         {
-            name: move_down
+            name: move_down_none_down
             modifier: none
             keycode: down
             mode: [emacs, vi_normal, vi_insert]
@@ -525,7 +525,7 @@ $env.config = {
             }
         }
         {
-            name: move_left
+            name: move_left_none_left
             modifier: none
             keycode: left
             mode: [emacs, vi_normal, vi_insert]
@@ -537,7 +537,7 @@ $env.config = {
             }
         }
         {
-            name: move_right_or_take_history_hint
+            name: move_right_or_take_history_hint_none_right
             modifier: none
             keycode: right
             mode: [emacs, vi_normal, vi_insert]
@@ -550,14 +550,14 @@ $env.config = {
             }
         }
         {
-            name: move_one_word_left
+            name: move_one_word_left_control_left
             modifier: control
             keycode: left
             mode: [emacs, vi_normal, vi_insert]
             event: { edit: movewordleft }
         }
         {
-            name: move_one_word_right_or_take_history_hint
+            name: move_one_word_right_or_take_history_hint_control_right
             modifier: control
             keycode: right
             mode: [emacs, vi_normal, vi_insert]
@@ -569,21 +569,21 @@ $env.config = {
             }
         }
         {
-            name: move_to_line_start
+            name: move_to_line_start_none_home
             modifier: none
             keycode: home
             mode: [emacs, vi_normal, vi_insert]
             event: { edit: movetolinestart }
         }
         {
-            name: move_to_line_start
+            name: move_to_line_start_control_char_a
             modifier: control
             keycode: char_a
             mode: [emacs, vi_normal, vi_insert]
             event: { edit: movetolinestart }
         }
         {
-            name: move_to_line_end_or_take_history_hint
+            name: move_to_line_end_or_take_history_hint_none_end
             modifier: none
             keycode: end
             mode: [emacs, vi_normal, vi_insert]
@@ -595,7 +595,7 @@ $env.config = {
             }
         }
         {
-            name: move_to_line_end_or_take_history_hint
+            name: move_to_line_end_or_take_history_hint_control_char_e
             modifier: control
             keycode: char_e
             mode: [emacs, vi_normal, vi_insert]
@@ -607,7 +607,7 @@ $env.config = {
             }
         }
         {
-            name: move_to_line_start
+            name: move_to_line_start_control_home
             modifier: control
             keycode: home
             mode: [emacs, vi_normal, vi_insert]
@@ -621,7 +621,7 @@ $env.config = {
             event: { edit: movetolineend }
         }
         {
-            name: move_up
+            name: move_up_control_char_p
             modifier: control
             keycode: char_p
             mode: [emacs, vi_normal, vi_insert]
@@ -633,7 +633,7 @@ $env.config = {
             }
         }
         {
-            name: move_down
+            name: move_down_control_char_t
             modifier: control
             keycode: char_t
             mode: [emacs, vi_normal, vi_insert]
@@ -645,49 +645,49 @@ $env.config = {
             }
         }
         {
-            name: delete_one_character_backward
+            name: delete_one_character_backward_none_backspace
             modifier: none
             keycode: backspace
             mode: [emacs, vi_insert]
             event: { edit: backspace }
         }
         {
-            name: delete_one_word_backward
+            name: delete_one_word_backward_control_backspace
             modifier: control
             keycode: backspace
             mode: [emacs, vi_insert]
             event: { edit: backspaceword }
         }
         {
-            name: delete_one_character_forward
+            name: delete_one_character_forward_none_delete
             modifier: none
             keycode: delete
             mode: [emacs, vi_insert]
             event: { edit: delete }
         }
         {
-            name: delete_one_character_forward
+            name: delete_one_character_forward_control_delete
             modifier: control
             keycode: delete
             mode: [emacs, vi_insert]
             event: { edit: delete }
         }
         {
-            name: delete_one_character_backward
+            name: delete_one_character_backward_control_char_h
             modifier: control
             keycode: char_h
             mode: [emacs, vi_insert]
             event: { edit: backspace }
         }
         {
-            name: delete_one_word_backward
+            name: delete_one_word_backward_control_char_w
             modifier: control
             keycode: char_w
             mode: [emacs, vi_insert]
             event: { edit: backspaceword }
         }
         {
-            name: move_left
+            name: move_left_none_backspace
             modifier: none
             keycode: backspace
             mode: vi_normal
@@ -701,7 +701,7 @@ $env.config = {
             event: { send: enter }
         }
         {
-            name: move_left
+            name: move_left_control_char_b
             modifier: control
             keycode: char_b
             mode: emacs
@@ -713,7 +713,7 @@ $env.config = {
             }
         }
         {
-            name: move_right_or_take_history_hint
+            name: move_right_or_take_history_hint_control_char_f
             modifier: control
             keycode: char_f
             mode: emacs
@@ -775,14 +775,14 @@ $env.config = {
             event: { edit: swapgraphemes }
         }
         {
-            name: move_one_word_left
+            name: move_one_word_left_alt_left
             modifier: alt
             keycode: left
             mode: emacs
             event: { edit: movewordleft }
         }
         {
-            name: move_one_word_right_or_take_history_hint
+            name: move_one_word_right_or_take_history_hint_alt_right
             modifier: alt
             keycode: right
             mode: emacs
@@ -794,14 +794,14 @@ $env.config = {
             }
         }
         {
-            name: move_one_word_left
+            name: move_one_word_left_alt_char_b
             modifier: alt
             keycode: char_b
             mode: emacs
             event: { edit: movewordleft }
         }
         {
-            name: move_one_word_right_or_take_history_hint
+            name: move_one_word_right_or_take_history_hint_alt_char_f
             modifier: alt
             keycode: char_f
             mode: emacs
@@ -820,14 +820,14 @@ $env.config = {
             event: { edit: deleteword }
         }
         {
-            name: delete_one_word_backward
+            name: delete_one_word_backward_alt_backspace_2
             modifier: alt
             keycode: backspace
             mode: emacs
             event: { edit: backspaceword }
         }
         {
-            name: delete_one_word_backward
+            name: delete_one_word_backward_alt_char_m
             modifier: alt
             keycode: char_m
             mode: emacs
@@ -915,9 +915,9 @@ def r-run [cmd: string, --host: string = "myserver"] {
 # r-run "ps aux"                # 기본 서버에서 실행
 # r-run "uptime" --host "dev"   # 다른 서버에서 실행
 
-#def ssh [...args] {
-#    infocmp -x xterm-ghostty | ^ssh ...$args -- tic -x -
-#}
+# (2026-09-18) 여기 있던 주석 처리된 `def ssh` 래퍼는 삭제함. ssh 로그인 자체를 막는 코드였음.
+# 원격 terminfo 설치는 ghostty의 `shell-integration-features = ssh-terminfo` 와
+# 아래 `ssh-terminfo` 함수가 담당한다.
 
 alias l = ls --all
 alias c = clear
@@ -925,7 +925,8 @@ alias ll = ls -l
 alias lt = eza --tree --level=2 --long --icons --git
 alias v = nvim
 alias vim = nvim
-alias hms = /nix/store/6kc5srg83nkyg21am089xx7pvq44kn2c-home-manager/bin/home-manager switch
+# (2026-09-24) `hms` alias 삭제: nix store 해시가 절대경로로 박혀 있어 다른 기기에서 무조건 깨졌음.
+#   nix-darwin / home-manager 를 다시 쓰게 되면 `home-manager switch` 를 PATH 로 부를 것.
 alias as = aerospace
 alias asr = atuin scripts run
 
@@ -984,3 +985,21 @@ if ($gem_bin | path exists) {
 }
 $env.DIRENV_LOG_FORMAT = ""
 
+
+# ── 원격 서버에 ghostty terminfo(xterm-ghostty) 설치 ─────────────────────────
+# ghostty의 shell-integration ssh 래퍼가 안 붙는 상황용 수동 도구. 서버당 1회.
+# 인자는 실제 ssh와 동일하게 그대로 넘어간다 (원격 명령은 항상 맨 뒤에 붙음):
+#   ssh-terminfo root@myhost
+#   ssh-terminfo -p 2222 user@myhost
+#   ssh-terminfo -i ~/.ssh/id_rsa -o ConnectTimeout=5 user@myhost
+# terminfo 데이터를 인자로 실어 보내므로 stdin이 터미널에 남아 비번 1회면 된다.
+# root로 접속하면 /etc/terminfo 에 들어가 그 서버의 모든 계정에 적용된다.
+def --wrapped ssh-terminfo [...args] {
+    let ti = (infocmp -x xterm-ghostty | encode base64)
+    let remote = $"echo '($ti)' | base64 -d | tic -x - 2>&1 | grep -v 'older tic versions' ; infocmp xterm-ghostty >/dev/null 2>&1 && echo 'terminfo OK' || echo 'terminfo FAILED (tic 설치 확인: apt install ncurses-bin)'"
+    ^ssh ...$args $remote
+}
+
+# cps (claude-profile-switch) — 같은 디렉터리의 cps.nu 를 로드한다.
+# stow 로 심링크되므로 어느 기기에서도 같은 경로에서 잡힌다.
+source ~/.config/nushell/cps.nu
