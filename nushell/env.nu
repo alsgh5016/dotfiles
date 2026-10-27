@@ -172,3 +172,10 @@ if ($llvm | path exists) {
     $env.LDFLAGS = $"-L($llvm)/lib/c++ -L($llvm)/lib/unwind -lunwind"
     $env.CPPFLAGS = $"-I($llvm)/include"
 }
+
+# /usr/local/cuda 는 update-alternatives 가 현재 CUDA 버전으로 연결하는 심볼릭 링크
+let cuda = "/usr/local/cuda"
+if ($cuda | path exists) {
+    $env.PATH = ($env.PATH | split row (char esep) | prepend ($cuda | path join "bin"))
+    $env.CUDA_HOME = $cuda
+}
