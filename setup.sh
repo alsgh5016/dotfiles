@@ -112,7 +112,7 @@ done < <(cd "$DOTFILES" && find . \
           -type f -print \
         | sed 's|^\./||' \
         | grep -vE '^(setup\.sh|Brewfile|README\.md|\.gitignore|\.stowrc)$' \
-        | grep -vE '^(atuin)/' \
+        | grep -vE '^(atuin|macpro)/' \
         | { if [ "$OS" = "Linux" ]; then grep -vE "^($MAC_ONLY)/"; else cat; fi; })
 
 if [ "$moved" -eq 1 ]; then
