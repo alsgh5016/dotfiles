@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# dotfiles 부트스트랩 (macOS)
+# dotfiles 부트스트랩 (macOS / Linux)
 #
 #   ./setup.sh              전체 실행
 #   ./setup.sh --no-brew    brew / Brewfile 단계 건너뛰기
@@ -9,6 +9,7 @@
 # 여러 번 실행해도 안전하도록(멱등) 만들었습니다.
 # 기존 실파일은 절대 지우지 않고 ~/.config-backup-<타임스탬프>/ 로 옮깁니다.
 # 사용자명·홈 경로를 하드코딩하지 않으므로 다른 계정의 맥에서도 그대로 동작합니다.
+# Linux 에서는 Homebrew on Linux(/home/linuxbrew/.linuxbrew)를 씁니다.
 
 set -euo pipefail
 
@@ -32,7 +33,11 @@ warn()  { printf '\033[1;33m[!]\033[0m %s\n' "$*"; }
 ok()    { printf '\033[1;32m[v]\033[0m %s\n' "$*"; }
 run()   { if [ "$DRY_RUN" -eq 1 ]; then printf '    (dry-run) %s\n' "$*"; else "$@"; fi; }
 
-[ "$(uname -s)" = "Darwin" ] || { echo "이 스크립트는 macOS 전용입니다." >&2; exit 1; }
+OS="$(uname -s)"
+case "$OS" in
+  Darwin|Linux) ;;
+  *) echo "지원하지 않는 OS 입니다: $OS (macOS / Linux 만 지원)" >&2; exit 1 ;;
+esac
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Homebrew
@@ -42,25 +47,33 @@ if [ "$DO_BREW" -eq 1 ]; then
     info "Homebrew 설치"
     run /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
-  # Apple Silicon / Intel 모두 대응
+  # Apple Silicon / Intel / Linux 모두 대응
   BREW_PREFIX="/usr/local"
   [ -x /opt/homebrew/bin/brew ] && BREW_PREFIX="/opt/homebrew"
+  [ -x /home/linuxbrew/.linuxbrew/bin/brew ] && BREW_PREFIX="/home/linuxbrew/.linuxbrew"
   if [ -x "$BREW_PREFIX/bin/brew" ]; then
     eval "$("$BREW_PREFIX/bin/brew" shellenv)"
   fi
 
-  # macOS 기본 셸(zsh)에서도 brew 도구가 PATH 에 잡히게 한다.
-  # 이 레포는 zshrc 를 관리하지 않으므로, 새 맥에서 이게 없으면 zsh 로 ssh 접속했을 때
-  # nu / nvim / tmux 등을 못 찾는다. ~/.zprofile 은 기기별 파일이라 경로를 그대로 적어도 된다.
-  ZPROFILE="$HOME/.zprofile"
-  if ! grep -qsF "brew shellenv" "$ZPROFILE"; then
-    info "$ZPROFILE 에 brew shellenv 추가"
-    if [ "$DRY_RUN" -eq 1 ]; then
-      printf '    (dry-run) %s 에 추가: eval "$(%s/bin/brew shellenv)"\n' "$ZPROFILE" "$BREW_PREFIX"
-    else
-      printf '\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "$ZPROFILE"
-    fi
+  # 기본 셸(macOS: zsh, Linux: bash)에서도 brew 도구가 PATH 에 잡히게 한다.
+  # 이 레포는 zshrc / bashrc 를 관리하지 않으므로, 새 기기에서 이게 없으면 ssh 접속했을 때
+  # nu / nvim / tmux 등을 못 찾는다. 이 파일들은 기기별 파일이라 경로를 그대로 적어도 된다.
+  # Linux 는 로그인 셸(~/.profile)과 비로그인 셸(~/.bashrc, tmux 새 창 등) 모두에 넣는다.
+  if [ "$OS" = "Darwin" ]; then
+    SHELL_RCS=("$HOME/.zprofile")
+  else
+    SHELL_RCS=("$HOME/.profile" "$HOME/.bashrc")
   fi
+  for rc in "${SHELL_RCS[@]}"; do
+    if ! grep -qsF "brew shellenv" "$rc"; then
+      info "$rc 에 brew shellenv 추가"
+      if [ "$DRY_RUN" -eq 1 ]; then
+        printf '    (dry-run) %s 에 추가: eval "$(%s/bin/brew shellenv)"\n' "$rc" "$BREW_PREFIX"
+      else
+        printf '\neval "$(%s/bin/brew shellenv)"\n' "$BREW_PREFIX" >> "$rc"
+      fi
+    fi
+  done
 
   info "Brewfile 설치 (CLI 도구)"
   run brew bundle --file="$DOTFILES/Brewfile"
@@ -76,6 +89,13 @@ command -v stow >/dev/null 2>&1 || { echo "stow 가 없습니다. 'brew install 
 #    ~/.config 안에 '실파일'이 있으면 stow 가 심링크를 못 겁니다.
 #    지우지 않고 백업 디렉터리로 옮깁니다.
 # ─────────────────────────────────────────────────────────────────────────────
+# macOS 전용 설정(창 관리 · 키 · 바)은 Linux 에서 링크하지 않는다.
+MAC_ONLY="aerospace|sketchybar|karabiner|hammerspoon|skhd|kindavim"
+STOW_IGNORE=()
+if [ "$OS" = "Linux" ]; then
+  for d in ${MAC_ONLY//|/ }; do STOW_IGNORE+=("--ignore=^$d"); done
+fi
+
 info "stow 충돌 검사"
 moved=0
 while IFS= read -r rel; do
@@ -92,7 +112,8 @@ done < <(cd "$DOTFILES" && find . \
           -type f -print \
         | sed 's|^\./||' \
         | grep -vE '^(setup\.sh|Brewfile|README\.md|\.gitignore|\.stowrc)$' \
-        | grep -vE '^(atuin)/')
+        | grep -vE '^(atuin)/' \
+        | { if [ "$OS" = "Linux" ]; then grep -vE "^($MAC_ONLY)/"; else cat; fi; })
 
 if [ "$moved" -eq 1 ]; then
   ok "백업 위치: $BACKUP_DIR"
@@ -117,9 +138,9 @@ run mkdir -p "$CONFIG_HOME/nushell"
 if [ "$DRY_RUN" -eq 1 ]; then
   warn "dry-run 에서는 백업 이동을 실제로 하지 않아, 아래 stow 시뮬레이션이"
   warn "이미 있는 실파일을 '충돌'로 보고할 수 있습니다. 실제 실행 시에는 먼저 백업됩니다."
-  (cd "$DOTFILES" && stow --simulate --verbose --restow .) || true
+  (cd "$DOTFILES" && stow --simulate --verbose --restow ${STOW_IGNORE[@]+"${STOW_IGNORE[@]}"} .) || true
 else
-  (cd "$DOTFILES" && stow --restow .)
+  (cd "$DOTFILES" && stow --restow ${STOW_IGNORE[@]+"${STOW_IGNORE[@]}"} .)
   ok "stow 완료"
 fi
 
@@ -129,9 +150,12 @@ fi
 #    XDG_CONFIG_HOME 이 설정돼 있으면 그쪽이 우선이지만, 로그인 셸 환경에
 #    그걸 심는 것보다 심링크 한 번이 단순합니다.
 # ─────────────────────────────────────────────────────────────────────────────
+#    Linux 의 nushell 은 원래 ~/.config/nushell 을 보므로 이 단계가 필요 없습니다.
 NU_APP_SUPPORT="$HOME/Library/Application Support/nushell"
 info "nushell 설정 경로 연결"
-if [ -L "$NU_APP_SUPPORT" ]; then
+if [ "$OS" = "Linux" ]; then
+  ok "Linux: ~/.config/nushell 을 그대로 사용 (연결 불필요)"
+elif [ -L "$NU_APP_SUPPORT" ]; then
   ok "이미 심링크: $(readlink "$NU_APP_SUPPORT")"
 elif [ -e "$NU_APP_SUPPORT" ]; then
   warn "실디렉터리가 있어 백업 후 교체합니다"
