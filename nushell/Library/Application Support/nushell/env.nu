@@ -98,8 +98,9 @@ use std "path add"
 # $env.PATH = ($env.PATH | uniq)
 
 if 'IN_NIX_SHELL' not-in $env and 'DEVBOX_SHELL_ENABLED' not-in $env {
+    # Homebrew first so its git wins over the slow /usr/bin/git xcrun shim
+    $env.PATH = ($env.PATH | prepend /opt/homebrew/bin)
     $env.PATH = ($env.PATH | append [
-        /opt/homebrew/bin
         /opt/homebrew/opt/llvm/bin
 	      /usr/local/bin
         /run/current-system/sw/bin

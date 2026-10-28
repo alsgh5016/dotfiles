@@ -11,6 +11,8 @@ brew "openssl@3"
 brew "curl"
 # Pack, ship and run any application as a lightweight container
 brew "docker"
+# Distributed revision control system
+brew "git"
 # Apple Silicon Monitor Top written in Go Lang
 brew "mactop"
 # Deep clean and optimize your Mac
