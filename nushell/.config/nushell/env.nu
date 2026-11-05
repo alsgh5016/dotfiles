@@ -97,22 +97,37 @@ use std "path add"
 # path add ($env.HOME | path join ".local" "bin")
 # $env.PATH = ($env.PATH | uniq)
 
+# ── 기기 의존 경로 (사용자명·아키텍처 무관) ───────────────────────────────────
+# $env.HOME : 사용자명과 무관하게 홈을 가리킨다.
+#   ⚠ `$nu.home-path` / `$nu.home-dir` 는 nushell 버전마다 이름이 달라(0.107 은 home-path, 이후 home-dir)
+#     기기 간 버전이 어긋나면 셸 시작 시 에러가 난다. 모든 버전에서 같은 $env.HOME 을 쓴다.
+# $brew : Apple Silicon(/opt/homebrew) / Intel(/usr/local) / Linux(/home/linuxbrew/.linuxbrew) 자동 판별
+let home = $env.HOME
+let brew = (if ("/opt/homebrew/bin/brew" | path exists) {
+    "/opt/homebrew"
+} else if ("/home/linuxbrew/.linuxbrew/bin/brew" | path exists) {
+    "/home/linuxbrew/.linuxbrew"
+} else {
+    "/usr/local"
+})
+
 if 'IN_NIX_SHELL' not-in $env and 'DEVBOX_SHELL_ENABLED' not-in $env {
     # Homebrew first so its git wins over the slow /usr/bin/git xcrun shim
     $env.PATH = ($env.PATH | prepend /opt/homebrew/bin)
     $env.PATH = ($env.PATH | append [
-        /opt/homebrew/opt/llvm/bin
-	      /usr/local/bin
-        /run/current-system/sw/bin
-        /Users/minho.kim/.local/bin
-        /opt/homebrew/opt/ruby/bin
-        /opt/homebrew/sbin
-        /Users/minho.kim/.opencode/bin
+        ($brew | path join "bin")
+        ($brew | path join "sbin")
+        ($brew | path join "opt" "ruby" "bin")
+        "/usr/local/bin"
+        "/run/current-system/sw/bin"
+        ($home | path join ".local" "bin")
+        ($home | path join ".opencode" "bin")
+        ($home | path join ".amp" "bin")
     ])
 }
 
 # devbox global shellenv --format nushell --preserve-path-stack -r
-let devbox_bin = "/opt/homebrew/bin/devbox"
+let devbox_bin = ($brew | path join "bin" "devbox")
 
 if ($devbox_bin | path exists) {
     try {
@@ -133,8 +148,8 @@ if ($devbox_bin | path exists) {
 # To load from a custom file you can use:
 # source ($nu.default-config-dir | path join 'custom.nu')
 
-$env.STARSHIP_CONFIG = "/Users/minho.kim/.config/starship/starship.toml"
-$env.NIX_CONF_DIR = "/Users/minho.kim/.config/nix"
+$env.STARSHIP_CONFIG = ($home | path join ".config" "starship" "starship.toml")
+$env.NIX_CONF_DIR = ($home | path join ".config" "nix")
 $env.CARAPACE_BRIDGES = 'zsh,fish,bash,inshellisense' # optional
 
 # Regenerate tool-integration init scripts on every startup so a nushell or
@@ -142,10 +157,10 @@ $env.CARAPACE_BRIDGES = 'zsh,fish,bash,inshellisense' # optional
 # config.nu sources these files; env.nu is fully evaluated before config.nu is
 # parsed, so regenerating here guarantees fresh, version-matched scripts.
 for tool in [
-    { bin: "atuin",    gen: {|| atuin init nu },             out: ($nu.home-dir | path join ".local/share/atuin/init.nu") }
-    { bin: "zoxide",   gen: {|| zoxide init nushell },        out: ($nu.home-dir | path join ".zoxide.nu") }
-    { bin: "carapace", gen: {|| carapace _carapace nushell }, out: ($nu.home-dir | path join ".cache/carapace/init.nu") }
-    { bin: "starship", gen: {|| starship init nu },           out: ($nu.home-dir | path join ".cache/starship/init.nu") }
+    { bin: "atuin",    gen: {|| atuin init nu },             out: ($home | path join ".local/share/atuin/init.nu") }
+    { bin: "zoxide",   gen: {|| zoxide init nushell },        out: ($home | path join ".zoxide.nu") }
+    { bin: "carapace", gen: {|| carapace _carapace nushell }, out: ($home | path join ".cache/carapace/init.nu") }
+    { bin: "starship", gen: {|| starship init nu },           out: ($home | path join ".cache/starship/init.nu") }
 ] {
     if (which $tool.bin | is-not-empty) {
         try {
@@ -159,11 +174,25 @@ for tool in [
 
 $env.EDITOR = "nvim"
 
-# 컴파일러 설정을 위한 LDFLAGS 추가
-$env.LDFLAGS = "-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
+# ── 선택적 툴체인: 설치된 기기에서만 붙는다 ───────────────────────────────────
+let openjdk_bin = ($brew | path join "opt" "openjdk@21" "bin")
+if ($openjdk_bin | path exists) {
+    $env.PATH = ($env.PATH | split row (char esep) | prepend $openjdk_bin)
+}
 
-# 필요 시 CPPFLAGS 등도 추가 가능
-$env.CPPFLAGS = "-I/opt/homebrew/opt/llvm/include"
+let llvm = ($brew | path join "opt" "llvm")
+if ($llvm | path exists) {
+    $env.PATH = ($env.PATH | split row (char esep) | prepend ($llvm | path join "bin"))
+    $env.LDFLAGS = $"-L($llvm)/lib/c++ -L($llvm)/lib/unwind -lunwind"
+    $env.CPPFLAGS = $"-I($llvm)/include"
+}
 
-$env.BUN_INSTALL = ($env.HOME | path join ".bun")
-$env.PATH = ($env.PATH | prepend ($env.BUN_INSTALL | path join "bin"))
+# /usr/local/cuda 는 update-alternatives 가 현재 CUDA 버전으로 연결하는 심볼릭 링크
+let cuda = "/usr/local/cuda"
+if ($cuda | path exists) {
+    $env.PATH = ($env.PATH | split row (char esep) | prepend ($cuda | path join "bin"))
+    $env.CUDA_HOME = $cuda
+}
+
+$env.BUN_INSTALL = ($home | path join ".bun")
+$env.PATH = ($env.PATH | split row (char esep) | prepend ($env.BUN_INSTALL | path join "bin"))

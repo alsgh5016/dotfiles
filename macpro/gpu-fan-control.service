@@ -1,0 +1,13 @@
+[Unit]
+Description=Mac Pro fan control following CPU and NVIDIA GPU temperatures
+After=nvidia-persistenced.service
+Conflicts=t2fanrd.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/gpu-fan-control
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,96 @@
+#!/bin/bash
+# Mac Pro 7,1 fan control that also follows NVIDIA GPU temperatures.
+# t2fanrd only reads CPU temp (NVIDIA cards expose no hwmon, SMC sees them as -127°C),
+# so this replaces it: fan speed = max(CPU curve, GPU curve), applied to every SMC fan.
+#
+# DRY_RUN=1 prints decisions without writing to sysfs.
+
+set -u
+
+CPU_LOW=55   CPU_HIGH=75   # °C: min speed at/below LOW, max speed at/above HIGH
+GPU_LOW=50   GPU_HIGH=80
+INTERVAL=2                 # seconds between checks
+STEP_DOWN=100              # max RPM decrease per interval (avoid fan pumping)
+DRY_RUN=${DRY_RUN:-0}
+
+log() { echo "$*"; }
+
+find_hwmon() {
+    local n
+    for n in /sys/class/hwmon/hwmon*/name; do
+        [[ $(<"$n") == "$1" ]] && { dirname "$n"; return 0; }
+    done
+    return 1
+}
+
+SMC=$(find_hwmon macsmc_hwmon) || { log "macsmc_hwmon not found"; exit 1; }
+CORETEMP=$(find_hwmon coretemp) || { log "coretemp not found"; exit 1; }
+FANS=()
+for t in "$SMC"/fan*_target; do FANS+=("${t%_target}"); done
+(( ${#FANS[@]} )) || { log "no fans under $SMC"; exit 1; }
+
+# The SMC rejects target writes (EOPNOTSUPP) unless the driver's override is on.
+# t2fanrd toggles the same switch: 1 on start, 0 on exit.
+FAN_CONTROL=/sys/module/macsmc_hwmon/parameters/fan_control
+
+take_control() {
+    (( DRY_RUN )) && return 0
+    [[ $(<"$FAN_CONTROL") == Y ]] || echo 1 > "$FAN_CONTROL"
+}
+
+set_fan() {  # $1 = fan prefix, $2 = rpm
+    (( DRY_RUN )) && return 0
+    echo "$2" > "$1_target"
+}
+
+# On exit hand the fans back to the SMC's own (CPU-only) control instead of leaving
+# them at whatever we last set. Crashes are covered by systemd Restart=always.
+trap '(( DRY_RUN )) || echo 0 > "$FAN_CONTROL"; log "exiting: fans returned to SMC"' EXIT
+trap 'exit 0' TERM INT
+
+# Fraction of the way from low to high, as 0..1000 (integer math).
+frac() {  # $1 temp, $2 low, $3 high
+    local t=$1 lo=$2 hi=$3
+    if (( t <= lo )); then echo 0
+    elif (( t >= hi )); then echo 1000
+    else echo $(( (t - lo) * 1000 / (hi - lo) ))
+    fi
+}
+
+declare -A last
+log "controlling ${#FANS[@]} fans via $SMC (cpu ${CPU_LOW}-${CPU_HIGH}°C, gpu ${GPU_LOW}-${GPU_HIGH}°C)"
+
+while true; do
+    take_control || log "could not enable $FAN_CONTROL"
+    cpu=$(( $(<"$CORETEMP/temp1_input") / 1000 ))
+
+    # Hottest GPU; if nvidia-smi fails we cannot see the GPUs, so assume the worst.
+    if gpu_list=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null) \
+        && [[ -n $gpu_list ]]; then
+        gpu=$(sort -n <<<"$gpu_list" | tail -1)
+    else
+        gpu=$GPU_HIGH
+        log "nvidia-smi failed; treating GPU as ${GPU_HIGH}°C"
+    fi
+
+    fc=$(frac "$cpu" $CPU_LOW $CPU_HIGH)
+    fg=$(frac "$gpu" $GPU_LOW $GPU_HIGH)
+    f=$(( fc > fg ? fc : fg ))
+
+    for fan in "${FANS[@]}"; do
+        min=$(<"$fan"_min) max=$(<"$fan"_max)
+        want=$(( min + (max - min) * f / 1000 ))
+        prev=${last[$fan]:-$want}
+        # Ramp up immediately, ramp down gradually.
+        if (( want < prev - STEP_DOWN )); then want=$(( prev - STEP_DOWN )); fi
+        if [[ $want != "${last[$fan]:-}" ]]; then
+            # Only remember the value once the SMC accepted it, so failures are retried.
+            if set_fan "$fan" "$want"; then
+                (( DRY_RUN )) && log "${fan##*/}: cpu=${cpu}°C gpu=${gpu}°C -> ${want} rpm (${min}-${max})"
+                last[$fan]=$want
+            fi
+        fi
+    done
+
+    sleep "$INTERVAL"
+done

@@ -386,7 +386,7 @@ $env.config = {
 
     keybindings: [
         {
-            name: delete_one_word_backward
+            name: delete_one_word_backward_alt_backspace
             modifier: alt
             keycode: backspace
             mode: [emacs, vi_normal, vi_insert]
@@ -501,7 +501,7 @@ $env.config = {
             event: { send: openeditor }
         }
         {
-            name: move_up
+            name: move_up_none_up
             modifier: none
             keycode: up
             mode: [emacs, vi_normal, vi_insert]
@@ -513,7 +513,7 @@ $env.config = {
             }
         }
         {
-            name: move_down
+            name: move_down_none_down
             modifier: none
             keycode: down
             mode: [emacs, vi_normal, vi_insert]
@@ -525,7 +525,7 @@ $env.config = {
             }
         }
         {
-            name: move_left
+            name: move_left_none_left
             modifier: none
             keycode: left
             mode: [emacs, vi_normal, vi_insert]
@@ -537,7 +537,7 @@ $env.config = {
             }
         }
         {
-            name: move_right_or_take_history_hint
+            name: move_right_or_take_history_hint_none_right
             modifier: none
             keycode: right
             mode: [emacs, vi_normal, vi_insert]
@@ -550,14 +550,14 @@ $env.config = {
             }
         }
         {
-            name: move_one_word_left
+            name: move_one_word_left_control_left
             modifier: control
             keycode: left
             mode: [emacs, vi_normal, vi_insert]
             event: { edit: movewordleft }
         }
         {
-            name: move_one_word_right_or_take_history_hint
+            name: move_one_word_right_or_take_history_hint_control_right
             modifier: control
             keycode: right
             mode: [emacs, vi_normal, vi_insert]
@@ -569,7 +569,7 @@ $env.config = {
             }
         }
         {
-            name: move_to_line_start
+            name: move_to_line_start_none_home
             modifier: none
             keycode: home
             mode: [emacs, vi_normal, vi_insert]
@@ -583,7 +583,7 @@ $env.config = {
             event: { edit: movetolinestart }
         }
         {
-            name: move_to_line_end_or_take_history_hint
+            name: move_to_line_end_or_take_history_hint_none_end
             modifier: none
             keycode: end
             mode: [emacs, vi_normal, vi_insert]
@@ -645,7 +645,7 @@ $env.config = {
             }
         }
         {
-            name: delete_one_character_backward
+            name: delete_one_character_backward_none_backspace
             modifier: none
             keycode: backspace
             mode: [emacs, vi_insert]
@@ -659,7 +659,7 @@ $env.config = {
             event: { edit: backspaceword }
         }
         {
-            name: delete_one_character_forward
+            name: delete_one_character_forward_none_delete
             modifier: none
             keycode: delete
             mode: [emacs, vi_insert]
@@ -820,7 +820,7 @@ $env.config = {
             event: { edit: deleteword }
         }
         {
-            name: delete_one_word_backward_alt_backspace
+            name: delete_one_word_backward_alt_backspace_2
             modifier: alt
             keycode: backspace
             mode: emacs
@@ -915,6 +915,9 @@ def r-run [cmd: string, --host: string = "myserver"] {
 # r-run "ps aux"                # 기본 서버에서 실행
 # r-run "uptime" --host "dev"   # 다른 서버에서 실행
 
+# (2026-09-18) 여기 있던 주석 처리된 `def ssh` 래퍼는 삭제함. ssh 로그인 자체를 막는 코드였음.
+# 원격 terminfo 설치는 ghostty의 `shell-integration-features = ssh-terminfo` 와
+# 아래 `ssh-terminfo` 함수가 담당한다.
 
 alias l = ls --all
 alias c = clear
@@ -922,7 +925,8 @@ alias ll = ls -l
 alias lt = eza --tree --level=2 --long --icons --git
 alias v = nvim
 alias vim = nvim
-alias hms = /nix/store/6kc5srg83nkyg21am089xx7pvq44kn2c-home-manager/bin/home-manager switch
+# (2026-09-24) `hms` alias 삭제: nix store 해시가 절대경로로 박혀 있어 다른 기기에서 무조건 깨졌음.
+#   nix-darwin / home-manager 를 다시 쓰게 되면 `home-manager switch` 를 PATH 로 부를 것.
 alias as = aerospace
 alias asr = atuin scripts run
 
@@ -967,7 +971,7 @@ source ~/.local/share/atuin/init.nu
 use ~/.cache/starship/init.nu
 
 let ruby_ver = "3.4.0"
-let gem_home = ($nu.home-dir | path join ".gem" "ruby" $ruby_ver)
+let gem_home = ($env.HOME | path join ".gem" "ruby" $ruby_ver)
 let gem_bin = ($gem_home | path join "bin")
 
 # Set GEM paths
@@ -980,3 +984,34 @@ if ($gem_bin | path exists) {
 }
 $env.DIRENV_LOG_FORMAT = ""
 
+
+# ── 원격 서버에 ghostty terminfo(xterm-ghostty) 설치 ─────────────────────────
+# ghostty의 shell-integration ssh 래퍼가 안 붙는 상황용 수동 도구. 원격 계정당 1회.
+# 인자는 실제 ssh와 동일하게 그대로 넘어간다:
+#   ssh-terminfo root@myhost
+#   ssh-terminfo -p 2222 user@myhost
+# 설계 (2026-09-24 3차):
+# - 원격 명령은 셸 문법이 전혀 없는 단일 명령(`tic -x /dev/stdin`)만 보낸다.
+#   ssh 원격 명령은 원격 계정의 로그인 셸이 해석하는데, 리다이렉트(2>/dev/null)나
+#   &&, 따옴표를 쓰면 셸(nu/zsh/bash/csh)마다 해석이 달라 tic 이 엉뚱한 인자를 받는다
+#   ("tic: Too many file names" 가 그 증상). 단순 명령은 어느 셸에서나 같다.
+# - terminfo 는 stdin 으로 보낸다. 파이프는 bash 가 담당한다
+#   (nushell 파이프 → ssh 로는 원격 tic 이 EOF 를 못 받고 멈춘 적이 있음).
+# - tic 인자는 `-` 대신 `/dev/stdin` — 구버전 macOS tic 에서도 확실하게 동작.
+# - ControlMaster 로 연결을 재사용해 확인 단계에서 비번을 다시 묻지 않는다.
+# - root 면 /etc/terminfo(서버 전체), 일반 계정이면 ~/.terminfo(그 계정만)에 들어간다.
+def --wrapped ssh-terminfo [...args] {
+    let cm = [-o ControlMaster=auto -o "ControlPath=/tmp/ssh-terminfo-%C" -o ControlPersist=15]
+    # 실패해도 아래 확인 단계까지 가서 원인을 보여주도록 try 로 감싼다
+    try { ^bash -c 'infocmp -x xterm-ghostty | ssh "$@" tic -x /dev/stdin' ssh-terminfo ...$cm ...$args }
+    let r = (^ssh ...$cm ...$args infocmp xterm-ghostty | complete)
+    if $r.exit_code == 0 {
+        print "terminfo OK — 다시 접속하면 백스페이스가 정상입니다"
+    } else {
+        print $"terminfo FAILED: ($r.stderr | str trim)"
+    }
+}
+
+# cps (claude-profile-switch) — 같은 디렉터리의 cps.nu 를 로드한다.
+# stow 로 심링크되므로 어느 기기에서도 같은 경로에서 잡힌다.
+source ~/.config/nushell/cps.nu

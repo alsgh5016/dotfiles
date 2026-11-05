@@ -3,3 +3,9 @@ tmux/.config/tmux/plugins/
 raycast
 fzf
 history.txt
+
+# 런타임 파일. setup.sh 가 대상 디렉터리를 실디렉터리로 만들어 두므로 보통은
+# 레포에 생기지 않지만, 디렉터리 링크가 남아 있을 때를 대비해 막아 둔다.
+nushell/.config/nushell/history.txt
+nushell/.config/nushell/plugin.msgpackz
+nushell/.config/nushell/vendor/
