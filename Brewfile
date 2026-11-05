@@ -35,6 +35,7 @@ brew "tmux"
 brew "git"
 brew "gh"
 brew "lazygit"
+brew "git-delta"    # lazygit diff 렌더러 (lazygit/.config/lazygit/config.yml)
 
 # ── dotfiles 관리 ─────────────────────────────────────────────────────────────
 brew "stow"

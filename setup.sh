@@ -47,7 +47,7 @@ esac
 # wezterm, zellij, hammerspoon, nix, nix-darwin, kindavim)은 레포에 남아 있지만
 # 아직 중첩 레이아웃으로 옮기지 않아 링크하지 않습니다. 옮기면 여기에 추가하세요.
 # atuin 은 의도적으로 제외(.stowrc --ignore). macpro/ 는 Mac Pro 전용 수동 설치물.
-STOW_PKGS=(nushell nvim tmux starship)
+STOW_PKGS=(nushell nvim tmux starship lazygit)
 # ssh 설정은 Host 항목이 macOS 기기 기준이라 macOS 에서만 링크합니다.
 if [ "$OS" = "Darwin" ]; then STOW_PKGS+=(ssh); fi
 
@@ -157,7 +157,7 @@ info "stow ${STOW_PKGS[*]}"
 # 링크(tree folding)로 접는데, 그러면 프로그램이 만드는 런타임 파일
 # (nushell 의 history.txt·plugin.msgpackz·vendor/, tmux 의 plugins/,
 # ssh 의 known_hosts·키)이 레포 안에 쌓입니다. 미리 만들어 두면 항상 파일 단위로 링크됩니다.
-REAL_DIRS=(.config/nushell .config/tmux)
+REAL_DIRS=(.config/nushell .config/tmux .config/lazygit)
 if [ "$OS" = "Darwin" ]; then REAL_DIRS+=(.ssh); fi
 for d in "${REAL_DIRS[@]}"; do
   if [ -L "$HOME/$d" ]; then
@@ -179,9 +179,9 @@ fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. macOS 전용 설정 경로 연결
-#    macOS 의 nushell 은 ~/.config 가 아니라
+#    macOS 의 nushell · lazygit 은 ~/.config 가 아니라
 #    ~/Library/Application Support/<앱> 을 봅니다. 그 디렉터리에는 실행 중
-#    생기는 파일(history.txt 등)도 쌓이므로 디렉터리가 아니라
+#    생기는 파일(history.txt, state.yml 등)도 쌓이므로 디렉터리가 아니라
 #    설정 파일만 ~/.config 쪽으로 링크합니다.
 #    Linux 는 ~/.config 를 그대로 읽으므로 이 단계가 필요 없습니다.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -212,6 +212,7 @@ else
   for f in env.nu config.nu; do
     link_file "$APP_SUPPORT/nushell/$f" "$CONFIG_HOME/nushell/$f"
   done
+  link_file "$APP_SUPPORT/lazygit/config.yml" "$CONFIG_HOME/lazygit/config.yml"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────

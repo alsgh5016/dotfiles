@@ -17,7 +17,7 @@ cd ~/repo/dotfiles
 2. 링크 대상에 있는 **실파일을 지우지 않고** `~/.config-backup-<타임스탬프>/` 로 이동,
    예전 레이아웃이 남긴 링크 정리
 3. 패키지별 `stow --restow` 로 심링크 생성
-4. (macOS) `~/Library/Application Support/nushell` 의 설정 파일을 `~/.config` 쪽으로 연결
+4. (macOS) `~/Library/Application Support/{nushell,lazygit}` 의 설정 파일을 `~/.config` 쪽으로 연결
 5. `~/.dotfiles` → 이 레포 위치 링크 (tmux-sessionx 등이 사용)
 6. tpm(tmux 플러그인 매니저) 클론
 7. 기본 셸 변경 명령 안내 (직접 실행)
@@ -42,6 +42,7 @@ cd ~/repo/dotfiles
 | `nvim/` | `~/.config/nvim/` | LazyVim |
 | `tmux/` | `~/.config/tmux/` | prefix `Ctrl+A`, tpm 플러그인 |
 | `starship/` | `~/.config/starship/` | 프롬프트 |
+| `lazygit/` | `~/.config/lazygit/` | diff 를 delta 로 렌더링 (`\|` 키로 전환) |
 | `ssh/` | `~/.ssh/config` | **macOS 에서만** 링크 (Host 항목이 macOS 기기 기준) |
 
 아직 예전 레이아웃(`<앱>/설정파일`)이라 **링크하지 않는** 것: `ghostty/` `wezterm/` `zellij/`
@@ -50,21 +51,21 @@ cd ~/repo/dotfiles
 
 `macpro/` 는 Mac Pro 전용 수동 설치물(GPU 팬 제어 데몬)입니다. `macpro/README.md` 참고.
 
-## macOS 에서 nushell 경로가 특이한 이유
+## macOS 에서 nushell · lazygit 경로가 특이한 이유
 
-macOS 의 nushell 은 `~/.config` 가 아니라 `~/Library/Application Support/<앱>` 을
-봅니다. 그 디렉터리에는 실행 중 생기는 파일(`history.txt` 등)도 쌓이므로,
+macOS 의 nushell 과 lazygit 은 `~/.config` 가 아니라 `~/Library/Application Support/<앱>` 을
+봅니다. 그 디렉터리에는 실행 중 생기는 파일(`history.txt`, `state.yml` 등)도 쌓이므로,
 디렉터리째가 아니라 **설정 파일만** `~/.config/<앱>/` 쪽으로 링크합니다.
 
-`~/.config/nushell`, `~/.config/tmux` 도 `setup.sh` 가 **실디렉터리**로
+`~/.config/nushell`, `~/.config/tmux`, `~/.config/lazygit` 도 `setup.sh` 가 **실디렉터리**로
 먼저 만들어 둡니다. stow 가 디렉터리째 링크(tree folding)하면 history·tmux 플러그인 같은
 런타임 파일이 레포 안에 쌓이기 때문입니다.
 
 확인:
 
 ```bash
-ls -l ~/.config/nushell/
-ls -l "$HOME/Library/Application Support/nushell/"
+ls -l ~/.config/nushell/ ~/.config/lazygit/
+ls -l "$HOME/Library/Application Support/nushell/" "$HOME/Library/Application Support/lazygit/"
 ```
 
 ## 기기마다 따로 해야 하는 것

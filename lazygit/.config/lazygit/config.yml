@@ -1,0 +1,7 @@
+git:
+  diffRenderers:
+    # lazygit 에서 `|` 키로 전환. 창 폭이 160칸보다 넓으면 좌우 비교.
+    - command: delta --{{colorScheme}} --paging=never --line-numbers {{if gt .width 160}}--side-by-side{{end}}
+      name: delta
+    - type: rawGit
+      name: default
